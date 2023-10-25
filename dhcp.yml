@@ -1,0 +1,24 @@
+#Install DHCP and configure a range and start the service and enable it to start at boot time ansible-playbook -i hosts install_dhcp.yml
+# code: language=yaml
+
+- tasks:
+    - name: install dhcp
+       range: 192.168.2.0/24
+       start: 192.168.1.10
+       end:   192.168.1.50
+       dns:   192.168.2.1
+       domain: example.com
+       gateway:  192.168.2.1
+
+    - name: Enable dhcp
+        service: dhcpd
+        state: started
+        enabled: yes
+  
+    - name: enable port on firewalld
+        port: 67/udp
+        state: enabled
+
+    - name: restart firewalld
+        service: firewalld
+        state: restarted       

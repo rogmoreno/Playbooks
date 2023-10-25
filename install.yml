@@ -1,0 +1,66 @@
+# code: language=ansible
+- name: Install and configure services
+  hosts: all
+  become: true
+
+  tasks:
+      - name: Install required packages
+        yum:
+            name: "{{ item }}"
+            state: present
+        loop:
+            - samba
+            - dhcp-server
+            - httpd
+            - bind
+            - mariadb-server
+            - php
+            - php-mysqlnd
+            - php-gd
+            - php-mbstring
+            - php-xml
+            - php-json
+            - php-pear
+            - php-fpm
+            - php-opcache
+
+
+      - name: Open necessary ports in firewall
+
+        firewalld:
+            port: "{{ item }}"
+            permanent: true
+            state: enabled
+            immediate: true
+        loop:
+            - 137/tcp
+            - 138/tcp
+            - 139/tcp
+            - 445/tcp
+            - 67/udp
+            - 68/udp
+            - 80/tcp
+            - 443/tcp
+            - 53/tcp
+            - 53/udp
+            - 3306/tcp
+
+
+      - name: Apply SELinux policies
+        selinux:
+            policy: targeted
+            state: enforcing
+
+      - name: start and enable services
+        service:
+            name: "{{ item }}"
+            state: started
+            enabled: true
+        loop:
+            - smb
+            - nmb
+            - dhcpd
+            - httpd
+            - named
+            - mariadb
+            - php-fpm
