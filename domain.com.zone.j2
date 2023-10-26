@@ -10,6 +10,8 @@ $TTL {{ item.ttl }}
         IN      NS      {{ item.secondary_ns }}.
 
         IN      MX      10      {{ item.mail_server }}.
+{loop item.hosts as record}
+{{ record.name }}    IN     A     {{ record.ip_address }}
+{/loop}
 
-{{ item.host }}       IN      A       {{ item.ip_address }}
-{{ item.mail_server }}       IN      A       {{ item.mail_server_ip }}
+{{ item.cname }}     IN      CNAME   {{ item.host }}

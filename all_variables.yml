@@ -1,0 +1,72 @@
+#ansible Variabes File items
+linux_users:
+  - name: "Administrator"
+    password: "Qwerty77"
+
+
+domains:
+  - name: velovert.org
+    ttl: 3600
+    primary_ns: centos140.velovert.org
+    hostmaster: hostmaster.velovert.org
+    serial: 2022010101
+    refresh: 3600
+    retry: 600
+    expire: 604800
+    minimum: 86400
+    hosts:
+      - name: centos140
+        ip_address: 192.168.140.1
+      - name: centos140-2
+        ip_address: 192.168.140.250
+      - name: server140
+        ip_address: 192.168.140.250
+    cname: www.velovert.org
+
+  - name: terreverte.net
+    ttl: 3600
+    primary_ns: centos140.terreverte.net
+    hostmaster: hostmaster.terreverte.net
+    serial: 2022010101
+    refresh: 3600
+    retry: 600
+    expire: 604800
+    minimum: 86400
+    hosts:
+      - name: centos140
+        ip_address: 192.168.140.1
+      - name: centos140-2
+        ip_address: 192.168.140.250
+      - name: server140
+        ip_address: 192.168.140.200
+    cname: www.terreverte.net
+
+nfs:
+  - folder: /nfs_share
+    client: 192.168.140.250
+    permissions: ro,all_squash,
+    sync: sync
+  - folder: /nfs_share
+    client: 192.168.140.200
+    permissions: ro,all_squash
+    sync: sync
+  - folder: /nfs_share
+    client: client10
+    permissions: rw,all_squash
+    sync: sync
+
+samba_config:
+   - samba_workgroup: WORKGROUP
+   - samba_alias: "SAMBA"
+   - samba_description: "Samba Server"
+   - samba_security: "user"
+   - samba_map_to_guest: "Bad User"
+   - samba_guest_account: "nobody"  
+
+samba_users:
+   - name: "Administrator"
+     password: "Qwerty77"
+   - name: "root"
+     password: "Qwerty77"
+
+    

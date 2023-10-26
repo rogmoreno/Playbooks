@@ -15,12 +15,7 @@
         name: "{{ item.name }}"
         password: "{{ item.password }}"
         state: present
-        loop:
-            - name: user1
-              password: user1
-            - name: user2
-              password: user2
-        
+        with_items: "{{ linux_users }}"
 
     - name: Install required packages
       yum:
@@ -45,7 +40,7 @@
 
 
     - name: Open necessary ports in firewall
-      hosts= servers
+       hosts= servers
       firewalld:
             port: "{{ item }}"
             permanent: true
@@ -81,24 +76,35 @@
         owner: root
         group: root
       notify: restart named
+      with_items: "{{ domains }}"
 
     - name: Generate zone files
       ansible.builtin.template:
         src: "{{ item.name }}.zone.j2"
-        dest: "/var/named/{{ item.name }}.zone"
+        dest: "/var/named/{{ item.name }}.db"
         mode: 420
         owner: named
         group: named
       with_items: "{{ domains }}"
     
-    - name: configure nfs-server /etc/exports
-      lineinfile:
-            path: /etc/exports
-            line: "{{ item }}"
-      loop:
-            - /var/www/html/website1
-            - /var/www/html/website2
-      
+    - name: Generate create folders
+      ansible.builtin.file:
+        path: "{{ item.folder }}"
+        state: directory
+        mode: 777
+        owner: nfsnobody
+        group: nfsnobody
+      with_items: "{{ nfs }}"
+
+    - name: Generate /etc/exports file
+      ansible.builtin.template:
+        src: exports.j2
+        dest: /etc/exports
+        mode: 644
+        owner: root
+        group: root
+      with_items: "{{ nfs }}"
+
     - name: configure samba on smb.conf
       community.general.ini_file:
           path: /etc/samba/smb.conf
@@ -107,27 +113,23 @@
           value: "{{ item.value }}"
       loop:
           - option: workgroup
-            value: WORKGROUP
+            value: {{ samba_workgroup }}
           - option: alias
-            value: samba
+            value: {{ samba_alias }}
           - option: security
-            value: user
+            value: {{ samba_security }}
           - option: map to guest
-            value: bad user
+            value: {{ samba_map_to_guest }}
           - option: guest account
-            value: nobody
-          - option: log file
-            value: /var/log/samba/%m.log
+            value: {{ samba_guest_account }}
+      with_items: "{{ samba_config }}"
+
     - name: samba user
       user:
             name: "{{ item.name }}"
             password: "{{ item.password }}"
             state: present
-      loop:
-            - name: user1
-            - password: user1
-            - name: user2
-            - password: user2
+      loop: "{{ samba_users }}"
         
     - name: configure samba on smb.conf
       community.general.ini_file:
@@ -135,19 +137,8 @@
           section: share
           option: "{{ item.option }}"
           value: "{{ item.value }}"
-      loop:
-          - option: workgroup
-            value: WORKGROUP
-          - option: alias
-            value: samba
-          - option: security
-            value: user
-          - option: map to guest
-            value: bad user
-          - option: guest account
-            value: nobody
-          - option: log file
-            value: /var/log/samba/%m.log
+      loop: "{{ samba_config }}"
+
         
     - name: copy websiteA
       copy:
