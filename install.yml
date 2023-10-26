@@ -2,13 +2,31 @@
 - name: Install and configure services
   hosts: servers
   become: true
+  vars_files:
+    - dhcp_vars.yml
+    - named_vars.yml
+    - samba_vars.yml
+    - httpd_vars.yml
+    - nfs_vars.yml
 
   tasks:
-      - name: Install required packages
-        yum:
+    - name: Add users 
+      ansible.builtin.user:
+        name: "{{ item.name }}"
+        password: "{{ item.password }}"
+        state: present
+        loop:
+            - name: user1
+              password: user1
+            - name: user2
+              password: user2
+        
+
+    - name: Install required packages
+      yum:
             name: "{{ item }}"
             state: present
-        loop:
+      loop:
             - samba
             - dhcp-server
             - httpd
@@ -26,15 +44,14 @@
             - nfs-server
 
 
-      - name: Open necessary ports in firewall
-
-        hosts: servers
-        firewalld:
+    - name: Open necessary ports in firewall
+      hosts= servers
+      firewalld:
             port: "{{ item }}"
             permanent: true
             state: enabled
             immediate: true
-        loop:
+      loop:
             - 137/tcp
             - 138/tcp
             - 139/tcp
@@ -47,41 +64,48 @@
             - 53/udp
             - 3306/tcp
 
-      - name: Copy dhcpd.conf
-        copy:
-            src: /root/dhcpd.conf
-            dest: /etc/dhcp/dhcpd.conf
+    - name: Configure dhcpd.conf
+      ansible.builtin.template:
+        src: dhcpd.conf.j2
+        dest: /etc/dhcp/dhcpd.conf
+        mode: 420
+        owner: root
+        group: root
+      notify: restart dhcpd    
       
-      - name: Copy named.conf
-        copy:
-            src: /root/named.conf
-            dest: /etc/named.conf
+    - name: Configure named.conf
+      ansible.builtin.template:
+        src: named.conf.j2
+        dest: /etc/named.conf
+        mode: 420
+        owner: root
+        group: root
+      notify: restart named
 
-      - name: Copy domain 1 zone file
-        copy:
-            src: /root/domain1.com.zone
-            dest: /var/named/domain1.com.zone
-
-      - name: Copy domain 2 zone file
-        copy:
-            src: /root/domain2.com.zone
-            dest: /var/named/domain2.com.zone
+    - name: Generate zone files
+      ansible.builtin.template:
+        src: "{{ item.name }}.zone.j2"
+        dest: "/var/named/{{ item.name }}.zone"
+        mode: 420
+        owner: named
+        group: named
+      with_items: "{{ domains }}"
     
-      - name: configure nfs-server /etc/exports
-        lineinfile:
+    - name: configure nfs-server /etc/exports
+      lineinfile:
             path: /etc/exports
             line: "{{ item }}"
-        loop:
+      loop:
             - /var/www/html/website1
             - /var/www/html/website2
       
-      - name: configure samba on smb.conf
-        community.general.ini_file:
+    - name: configure samba on smb.conf
+      community.general.ini_file:
           path: /etc/samba/smb.conf
           section: global
           option: "{{ item.option }}"
           value: "{{ item.value }}"
-        loop:
+      loop:
           - option: workgroup
             value: WORKGROUP
           - option: alias
@@ -94,19 +118,24 @@
             value: nobody
           - option: log file
             value: /var/log/samba/%m.log
+    - name: samba user
+      user:
+            name: "{{ item.name }}"
+            password: "{{ item.password }}"
+            state: present
+      loop:
+            - name: user1
+            - password: user1
+            - name: user2
+            - password: user2
         
-      - name: configure samba on smb.conf
-        community.general.ini_file:
+    - name: configure samba on smb.conf
+      community.general.ini_file:
           path: /etc/samba/smb.conf
           section: share
           option: "{{ item.option }}"
           value: "{{ item.value }}"
-
-          
-
-          
-          
-        loop:
+      loop:
           - option: workgroup
             value: WORKGROUP
           - option: alias
@@ -119,38 +148,38 @@
             value: nobody
           - option: log file
             value: /var/log/samba/%m.log
-
-      - name: copy websiteA
-        copy:
+        
+    - name: copy websiteA
+      copy:
             src: /root/website1
             dest: /var/www/html/website1
       
-      - name: copy websiteB
-        copy:
+    - name: copy websiteB
+      copy:
           src: /root/website2
           dest: /var/www/html/website2
 
-      - name: httpd.conf.d websiteA
-        copy:
+    - name: httpd.conf.d websiteA
+      copy:
           src: /root/website1.conf
           dest: /etc/httpd/conf.d/website1.conf
       
-      - name: httpd.conf.d websiteB
-        copy:
+    - name: httpd.conf.d websiteB
+      copy:
           src: /root/website2.conf
           dest: /etc/httpd/conf.d/website2.conf
         
-      - name: Apply SELinux policies
-        selinux:
+    - name: Apply SELinux policies
+      selinux:
             policy: targeted
             state: disabled
 
-      - name: start and enable services
-        service:
+    - name: start and enable services
+      service:
             name: "{{ item }}"
             state: started
             enabled: true
-        loop:
+      loop:
             - smb
             - nmb
             - dhcpd
@@ -158,3 +187,27 @@
             - named
             - mariadb
             - php-fpm
+
+- samba share:
+    - name: {{ item.name }}
+      path: {{ item.path }}
+      browsable: yes
+      writable: yes
+      guest_ok: yes
+      read_only: no
+      create_mask: 0777
+      directory_mask: 0777
+      force_create_mode: 0777
+      force_directory_mode: 0777
+      force_user: {{ item.force_user}}
+      force_group: {{ item.force_group}}
+      with_items: "{{ folders }}"
+
+- name: create database
+  mysql_db:
+    name: "{{ item.name }}"
+    state: present
+  with_items: "{{ databases }}"
+
+
+

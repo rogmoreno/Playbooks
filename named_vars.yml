@@ -1,0 +1,29 @@
+domains:
+  - name: domain1.com
+    ttl: 3600
+    primary_ns: ns1.domain1.com
+    secondary_ns: ns2.domain1.com
+    hostmaster: hostmaster.domain1.com
+    serial: 2022010101
+    refresh: 3600
+    retry: 600
+    expire: 604800
+    minimum: 86400
+    host: www.domain1.com
+    ip_address: 192.168.1.10
+    mail_server: mail.domain1.com
+    mail_server_ip: 192.168.1.20
+  - name: domain2.com
+    ttl: 3600
+    primary_ns: ns1.domain2.com
+    secondary_ns: ns2.domain2.com
+    hostmaster: hostmaster.domain2.com
+    serial: 2022010101
+    refresh: 3600
+    retry: 600
+    expire: 604800
+    minimum: 86400
+    host: www.domain2.com
+    ip_address: 192.168.1.11
+    mail_server: mail.domain2.com
+    mail_server_ip: 192.168.1.21

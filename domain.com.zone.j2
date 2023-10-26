@@ -1,0 +1,15 @@
+$TTL {{ item.ttl }}
+@       IN      SOA     {{ item.primary_ns }}. {{ item.hostmaster }}. (
+                        {{ item.serial }}      ; serial
+                        {{ item.refresh }}     ; refresh
+                        {{ item.retry }}       ; retry
+                        {{ item.expire }}      ; expire
+                        {{ item.minimum }} )   ; minimum
+
+        IN      NS      {{ item.primary_ns }}.
+        IN      NS      {{ item.secondary_ns }}.
+
+        IN      MX      10      {{ item.mail_server }}.
+
+{{ item.host }}       IN      A       {{ item.ip_address }}
+{{ item.mail_server }}       IN      A       {{ item.mail_server_ip }}
