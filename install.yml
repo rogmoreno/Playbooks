@@ -23,10 +23,12 @@
             - php-pear
             - php-fpm
             - php-opcache
+            - nfs-server
 
 
       - name: Open necessary ports in firewall
 
+        hosts: servers
         firewalld:
             port: "{{ item }}"
             permanent: true
@@ -45,7 +47,99 @@
             - 53/udp
             - 3306/tcp
 
+      - name: Copy dhcpd.conf
+        copy:
+            src: /root/dhcpd.conf
+            dest: /etc/dhcp/dhcpd.conf
+      
+      - name: Copy named.conf
+        copy:
+            src: /root/named.conf
+            dest: /etc/named.conf
 
+      - name: Copy domain 1 zone file
+        copy:
+            src: /root/domain1.com.zone
+            dest: /var/named/domain1.com.zone
+
+      - name: Copy domain 2 zone file
+        copy:
+            src: /root/domain2.com.zone
+            dest: /var/named/domain2.com.zone
+    
+      - name: configure nfs-server /etc/exports
+        lineinfile:
+            path: /etc/exports
+            line: "{{ item }}"
+        loop:
+            - /var/www/html/website1
+            - /var/www/html/website2
+      
+      - name: configure samba on smb.conf
+        community.general.ini_file:
+          path: /etc/samba/smb.conf
+          section: global
+          option: "{{ item.option }}"
+          value: "{{ item.value }}"
+        loop:
+          - option: workgroup
+            value: WORKGROUP
+          - option: alias
+            value: samba
+          - option: security
+            value: user
+          - option: map to guest
+            value: bad user
+          - option: guest account
+            value: nobody
+          - option: log file
+            value: /var/log/samba/%m.log
+        
+      - name: configure samba on smb.conf
+        community.general.ini_file:
+          path: /etc/samba/smb.conf
+          section: share
+          option: "{{ item.option }}"
+          value: "{{ item.value }}"
+
+          
+
+          
+          
+        loop:
+          - option: workgroup
+            value: WORKGROUP
+          - option: alias
+            value: samba
+          - option: security
+            value: user
+          - option: map to guest
+            value: bad user
+          - option: guest account
+            value: nobody
+          - option: log file
+            value: /var/log/samba/%m.log
+
+      - name: copy websiteA
+        copy:
+            src: /root/website1
+            dest: /var/www/html/website1
+      
+      - name: copy websiteB
+        copy:
+          src: /root/website2
+          dest: /var/www/html/website2
+
+      - name: httpd.conf.d websiteA
+        copy:
+          src: /root/website1.conf
+          dest: /etc/httpd/conf.d/website1.conf
+      
+      - name: httpd.conf.d websiteB
+        copy:
+          src: /root/website2.conf
+          dest: /etc/httpd/conf.d/website2.conf
+        
       - name: Apply SELinux policies
         selinux:
             policy: targeted
