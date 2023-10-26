@@ -69,4 +69,23 @@ samba_users:
    - name: "root"
      password: "Qwerty77"
 
-    
+samba_folders:
+  - name: /public_share
+  - name: /private_share
+      
+
+samba_shares:
+  - section: public_share
+    option: path
+    value: /public_share
+    name: public_share
+    read_only: yes
+    guest_ok: yes
+  - section: websiteB
+    option: path
+    value: /private_share
+    name: private_share
+    read_only: no
+    guest_ok: no  
+    valid_users: "Administrator, root" 
+
