@@ -1,6 +1,6 @@
 # code: language=ansible
 - name: Install and configure services
-  hosts: all
+  hosts: servers
   become: true
 
   tasks:
@@ -49,7 +49,7 @@
       - name: Apply SELinux policies
         selinux:
             policy: targeted
-            state: enforcing
+            state: disabled
 
       - name: start and enable services
         service:
