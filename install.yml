@@ -3,11 +3,7 @@
   hosts: servers
   become: true
   vars_files:
-    - dhcp_vars.yml
-    - named_vars.yml
-    - samba_vars.yml
-    - httpd_vars.yml
-    - nfs_vars.yml
+    -all_variables.yml
 
   tasks:
     - name: Add users 
@@ -197,12 +193,6 @@
             - mariadb
             - php-fpm
 
-
-- name: create database
-  mysql_db:
-    name: "{{ item.name }}"
-    state: present
-  with_items: "{{ databases }}"
 
 
 
