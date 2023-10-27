@@ -9,7 +9,10 @@ $TTL {{ item.ttl }}
         IN      NS      {{ item.primary_ns }}.
         IN      NS      {{ item.secondary_ns }}.
 
-
+@       IN      A      {{ item.ip_address }}
 {% for record in item.hosts %}
 {{ record.name }}    IN      A    {{ record.ip_address }}
 {% endfor %}
+{{item.cname}}   IN      CNAME   {{ item.cdomain }}.
+
+

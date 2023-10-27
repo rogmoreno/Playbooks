@@ -1,5 +1,5 @@
 Namevirtualhost *:80
-```
+
 <VirtualHost *:80>
     ServerName {{ item.name }}
     ServerAlias www.{{ item.name }}
@@ -7,4 +7,4 @@ Namevirtualhost *:80
     ErrorLog /srv/{{ item.name}}/error.log
     CustomLog /srv/{{item.name}}/requests.log combined
 </VirtualHost>
-```
+

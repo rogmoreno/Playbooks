@@ -13,8 +13,12 @@ options {
   bindkeys-file "/etc/named.root.key";
 };
 
+#multiple domains
+{% for item in domains %}
 zone "{{item.name}}" IN {
   type master;
   file "{{item.name}}.db";
   allow-update { none; };
 };
+{% endfor %}
+

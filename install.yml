@@ -25,16 +25,7 @@
             - dhcp-server
             - httpd
             - bind
-            - mariadb-server
-            - php
-            - php-mysqlnd
-            - php-gd
-            - php-mbstring
-            - php-xml
-            - php-json
-            - php-pear
-            - php-fpm
-            - php-opcache
+
             - nfs-utils
 
     - name: Configure dhcpd.conf
@@ -44,6 +35,7 @@
         mode: 420
         owner: root
         group: root
+        
 
     - name: Configure named.conf
       ansible.builtin.template:
@@ -54,6 +46,7 @@
         group: root
       with_items: "{{ domains }}"
 
+
     - name: Generate zone files
       ansible.builtin.template:
         src: "domain.com.zone.j2"
@@ -63,15 +56,15 @@
         group: named
       with_items: "{{ domains }}"
     
-    - name: Generate create folders
-      ansible.builtin.file:
-        path: "{{ item.folder }}"
+    - name: Generate create NFS folders
+      file:
+        path: "/nfs_share"
         state: directory
-        mode: 777
-        owner: nfsnobody
-        group: nfsnobody
-      with_items: "{{ nfs }}"
-
+        mode: !!str 777
+        owner: nobody
+        group: nobody
+      
+    
     - name: Generate /etc/exports file
       ansible.builtin.template:
         src: exports.j2
@@ -89,20 +82,42 @@
       ansible.builtin.include_role:
         name: vladgh.samba.server
       vars:
-        samba_netbios_name: "{{ samba_netbios_name }}"
-        samba_server_string: "{{ samba_description }}"
-        samba_workgroup: "{{ samba_workgroup }}"
-        samba_load_homes: true
-        samba_load_printers: false
-        with_items: "{{ samba_config }}"
-
+        samba_workgroup: WORKGROUP
+        samba_server_string: "Samba Server"
+        samba_mdns_name: "Samba Server"
+        samba_security: user
+        samba_bind_interfaces_only: yes
+        samba_load_homes: yes
+        samba_passdb_backend: tdbsam
+        samba_map_to_guest: bad user
+        samba_domain_master: yes
+        samba_dns_proxy: no
+        samba_log_level: 1
+        samba_log_file: /var/log/samba/%m.log
+        samba_max_log_size: 50
+        samba_printing: cups
+        samba_printcap_name: cups
+        samba_printing_bsd: cups
+        samba_printing_cups: cups
+        samba_printing_lprng: cups
+        samba_disable_spoolss: yes
+        samba_load_printers: yes
+        samba_print_driver: cups
+        samba_print_driver_dir: /usr/share/cups/drivers
+        samba_shares_global:
+          - name: homes
+            comment: Home Directories
+            browseable: no
+            writable: yes
+            valid_users: "%S"
+            create_mask: 0700
+            directory_mask: 0700
         samba_users:
           - name: "{{ item.name }}"
             password: "{{ item.password }} "
             with_items: "{{ samba_users }}"
-
-        samba_shares_root: /srv/samba
-        samba_shares:
+        samba_shares_root: /srv/samba    
+        samba_shares_users:
           - name: "{{item.name}}"
             comment: "{{item.comment}}"
             valid_users: "{{item.valid_users}}"
@@ -123,29 +138,39 @@
         
     - name: create file folder an create index for domains
       ansible.builtin.file:
-        path: /srv/{{item.name}}/index.php
-        state: touch
+        path: /srv/{{item.name}}/
+        state: directory
         mode: 755
         owner: apache
         group: apache
-      with_items: "{{ domains }}"
+      loop: "{{ domains }}"
 
+    - name: insert text to file
+      ansible.builtin.lineinfile:
+        path: /srv/{{item.name}}/index.html
+        line: "{{item.name}}"
+        mode: 755
+        owner: apache
+        group: apache
+        create: yes
+      loop: "{{ domains }}"
+     
 
 
     - name: httpd.conf.d using variables for virtual hosts
       template:
           src: virtual.conf.j2
-          dest: /etc/httpd/conf/httpd.conf.d/{{ item.name }}.conf
+          dest: /etc/httpd/conf.d/{{ item.name }}.conf
           mode: 644
           owner: root
           group: root
       with_items: "{{ domains }}"
 
 
-    - name: start and enable services
+    - name: start and enable services 
       service:
             name: "{{ item }}"
-            state: started
+            state: restarted
             enabled: true
       loop:
             - smb
@@ -153,8 +178,8 @@
             - dhcpd
             - httpd
             - named
-            - mariadb
-            - php-fpm
+            - nfs-server
+                        
 
     - name: Open Services
       ansible.builtin.firewalld:
@@ -170,6 +195,8 @@
         - dhcp
         - dns
         - mysql
+        - mountd
+        - rpc-bind
         
     - name: Firewalld Open ports
       ansible.builtin.firewalld:
