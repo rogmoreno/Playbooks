@@ -1,4 +1,6 @@
 servers:
   hosts:
+    client:
+      ansible_host: 192.168.140.250
     server:
       ansible_host: 192.168.140.1

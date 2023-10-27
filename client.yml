@@ -1,0 +1,111 @@
+# code: language=ansible
+- name: Install and configure services
+  hosts: client
+  become: yes
+  become_method: sudo
+  become_user: root
+  become_flags: '-H'
+
+  vars_files:
+    - all_variables_client.yml
+
+  tasks:
+    - name: Adding users 
+      ansible.builtin.user:
+        name: "{{ item.name }}"
+        password: "{{ item.password }}"
+        state: present
+      loop: "{{ linux_users }}" 
+
+
+    - name: Install required packages
+      ansible.builtin.dnf:      
+            name: "{{ item }}"
+      loop:
+            - cifs-utils
+            - nfs-utils
+            - bind-utils
+            - bind
+
+    - name: configure DNS as slave zone
+      ansible.builtin.template:
+        src: named_slave.conf.j2
+        dest: /etc/named.conf
+        mode: 420
+        owner: root
+        group: root
+      with_items: "{{ domains }}"
+
+    
+    - name: start and enable services 
+      service:
+            name: "{{ item }}"
+            state: restarted
+            enabled: true
+      loop:
+            - named
+  
+    - name: umount if exists 
+      ansible.builtin.mount:
+        path: /root/nfsshare
+        state: unmounted
+
+    - name: create nfs  mount point 
+      ansible.builtin.file:
+        path: /root/nfsshare
+        state: directory
+        mode: !!str 755
+        owner: root
+        group: root
+
+
+    - name: mount nfs resource on fstab 
+      ansible.builtin.mount:
+        path: /root/nfsshare
+        src: "{{ item.source }}"
+        fstype: nfs
+        opts: "{{ item.opts }}"
+        state: mounted
+      with_items: "{{ nfs }}"
+
+    - name: create cifs mount point 
+      ansible.builtin.file:
+        path: /root/{item.name}
+        state: directory
+        mode: !!str 755
+        owner: root
+        group: root
+      with_items: "{{ cifs }}"
+    
+    
+    - name: mount cifs resource 
+      ansible.builtin.mount:
+        src: "{{ item.source }}"
+        path: /root/{item.name}
+        fstype: cifs
+        opts:  'username={{ item.user }},password={{ item.password }}'
+        state: mounted
+      with_items: "{{ cifs }}"
+
+    - name: disable ethernet interfase nmcli 
+      community.general.nmcli:
+        conn_name: "{{ item }}"
+        state: absent
+      loop:
+        - enp2s0
+
+    - name: set the nameserver to localhost and delete all other nameservers by nmcli
+      community.general.nmcli:
+        conn_name: "enp1s0"
+        type: ethernet
+        dns4: 127.0.0.1
+        state: present
+
+    - name: test website connection and show domain 
+      ansible.builtin.uri:
+        url: "http://www.{{ item.name }}"
+        return_content: yes
+      register: result
+      with_items: "{{ domains }}"
+
+    

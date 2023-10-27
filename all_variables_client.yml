@@ -1,0 +1,32 @@
+#ansible Variabes File items
+linux_users:
+  - name: administrator
+    password: "$6$7BQhhBZ8NJpcOyiu$be6BA17aMfo47VIHhApBd1I8E3hYQldWV3JxYriUDicTDRSxZQ6t6Ifdltl7bUrf7d6c6YDRmCeWfDU.nI7jG/"
+
+domains:
+  - name: velovert.org
+    master: 192.168.140.1
+  - name: terreverte.net
+    master: 192.168.140.1
+
+nfs:
+  - name: /root/nfsshare
+    source: 192.168.140.1:/nfs_share
+    opts: defaults
+    state: mounted
+
+cifs: 
+  - name: Public_Share
+    source: //192.168.140.1/public_share
+    opts: defaults
+    state: mounted
+    user: administrator
+    password: Qwerty77
+  
+  - name: Private_Share
+    source: //192.168.140.1/public_share
+    opts: defaults
+    state: mounted
+    user: administrator
+    password: Qwerty77
+

@@ -6,5 +6,11 @@ Namevirtualhost *:80
     DocumentRoot /srv/{{ item.name}}/public_html
     ErrorLog /srv/{{ item.name}}/error.log
     CustomLog /srv/{{item.name}}/requests.log combined
+        
+    <Directory  /srv/{{ item.name}}/public_html >
+    Options Indexes FollowSymLinks MultiViews
+    Require ip 192.168
+    </Directory>
+
 </VirtualHost>
 

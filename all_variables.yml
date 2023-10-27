@@ -75,16 +75,26 @@ samba_users:
      password: "Qwerty77"
    - name: "root"
      password: "Qwerty77"
-     
+
 samba_shares:
   - name: public_share
     comment: "Public Share"
+    browseable: "yes"
+    public: "yes"
+    guest_ok: "yes"
+    read_only: "no"
+    create_mask: "0777"
+    directory_mask: "0777"
+    force_create_mode: "0777"
+    force_directory_mode: "0777"
+  - name: private_share
+    comment: "Private Share"
     valid_users: "administrator,root"
     write_list: "administrator,root" 
     group: "root"
     browseable: "yes"
     public: "yes"
-    guest_ok: "yes"
+    guest_ok: "no"
     read_only: "no"
     create_mask: "0777"
     directory_mask: "0777"
