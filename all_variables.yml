@@ -1,13 +1,16 @@
 #ansible Variabes File items
 linux_users:
-  - name: "Administrator"
-    password: "Qwerty77"
+  - name: administrator
+    password: "$6$7BQhhBZ8NJpcOyiu$be6BA17aMfo47VIHhApBd1I8E3hYQldWV3JxYriUDicTDRSxZQ6t6Ifdltl7bUrf7d6c6YDRmCeWfDU.nI7jG/"
+  - name: usuario
+    password: "$6$7BQhhBZ8NJpcOyiu$be6BA17aMfo47VIHhApBd1I8E3hYQldWV3JxYriUDicTDRSxZQ6t6Ifdltl7bUrf7d6c6YDRmCeWfDU.nI7jG/"
 
 
 domains:
   - name: velovert.org
     ttl: 3600
     primary_ns: centos140.velovert.org
+    secondary_ns: centos140-2.velovert.org
     hostmaster: hostmaster.velovert.org
     serial: 2022010101
     refresh: 3600
@@ -26,6 +29,7 @@ domains:
   - name: terreverte.net
     ttl: 3600
     primary_ns: centos140.terreverte.net
+    secondary_ns: centos140.terreverte.net
     hostmaster: hostmaster.terreverte.net
     serial: 2022010101
     refresh: 3600
@@ -57,7 +61,7 @@ nfs:
 
 samba_config:
    - samba_workgroup: WORKGROUP
-   - samba_alias: "SAMBA"
+   - samba_netbios_name: "SAMBA"
    - samba_description: "Samba Server"
    - samba_security: "user"
    - samba_map_to_guest: "Bad User"
@@ -68,24 +72,27 @@ samba_users:
      password: "Qwerty77"
    - name: "root"
      password: "Qwerty77"
-
-samba_folders:
-  - name: /public_share
-  - name: /private_share
-      
-
 samba_shares:
-  - section: public_share
-    option: path
-    value: /public_share
-    name: public_share
-    read_only: yes
-    guest_ok: yes
-  - section: websiteB
-    option: path
-    value: /private_share
-    name: private_share
-    read_only: no
-    guest_ok: no  
-    valid_users: "Administrator, root" 
-
+  - name: public_share
+    comment: "Public Share"
+    valid_users: "administrator,root"
+    write_list: "administrator,root" 
+    group: "root"
+    browseable: "yes"
+    public: "yes"
+    guest_ok: "yes"
+    read_only: "no"
+    create_mask: "0777"
+    directory_mask: "0777"
+    force_create_mode: "0777"
+    force_directory_mode: "0777"
+    force_user : "administrator"
+    force_group: "root"
+    
+dhcp_subnet: 192.168.140.0
+dhcp_netmask: 255.255.255.0
+dhcp_range_start: 192.168.140.100
+dhcp_range_end: 192.168.140.150
+dhcp_dns_server: 192.168.140.1
+dhcp_default_lease_time: 600
+dhcp_max_lease_time: 7200

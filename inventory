@@ -1,10 +1,4 @@
-
-[webservers]
-192.168.124.57
-192.168.124.84
-
-
-
-
-
-
+servers:
+  hosts:
+    server:
+      ansible_host: 192.168.140.1

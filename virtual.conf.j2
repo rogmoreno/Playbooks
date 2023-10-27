@@ -3,8 +3,8 @@ Namevirtualhost *:80
 <VirtualHost *:80>
     ServerName {{ item.name }}
     ServerAlias www.{{ item.name }}
-    DocumentRoot /var/www/{{ item.name}}/public_html
-    ErrorLog /var/www/{{ item.name}}/error.log
-    CustomLog /var/www/{{item.name}}/requests.log combined
+    DocumentRoot /srv/{{ item.name}}/public_html
+    ErrorLog /srv/{{ item.name}}/error.log
+    CustomLog /srv/{{item.name}}/requests.log combined
 </VirtualHost>
 ```

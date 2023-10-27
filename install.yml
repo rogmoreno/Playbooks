@@ -1,9 +1,13 @@
 # code: language=ansible
 - name: Install and configure services
   hosts: servers
-  become: true
+  become: yes
+  become_method: sudo
+  become_user: root
+  become_flags: '-H'
+
   vars_files:
-    -all_variables.yml
+    - all_variables.yml
 
   tasks:
     - name: Add users 
@@ -11,12 +15,11 @@
         name: "{{ item.name }}"
         password: "{{ item.password }}"
         state: present
-        with_items: "{{ linux_users }}"
+      loop: "{{ linux_users }}"
 
     - name: Install required packages
-      yum:
+      ansible.builtin.dnf:      
             name: "{{ item }}"
-            state: present
       loop:
             - samba
             - dhcp-server
@@ -32,28 +35,7 @@
             - php-pear
             - php-fpm
             - php-opcache
-            - nfs-server
-
-
-    - name: Open necessary ports in firewall
-       hosts= servers
-      firewalld:
-            port: "{{ item }}"
-            permanent: true
-            state: enabled
-            immediate: true
-      loop:
-            - 137/tcp
-            - 138/tcp
-            - 139/tcp
-            - 445/tcp
-            - 67/udp
-            - 68/udp
-            - 80/tcp
-            - 443/tcp
-            - 53/tcp
-            - 53/udp
-            - 3306/tcp
+            - nfs-utils
 
     - name: Configure dhcpd.conf
       ansible.builtin.template:
@@ -62,8 +44,7 @@
         mode: 420
         owner: root
         group: root
-      notify: restart dhcpd    
-      
+
     - name: Configure named.conf
       ansible.builtin.template:
         src: named.conf.j2
@@ -71,12 +52,11 @@
         mode: 420
         owner: root
         group: root
-      notify: restart named
       with_items: "{{ domains }}"
 
     - name: Generate zone files
       ansible.builtin.template:
-        src: "{{ item.name }}.zone.j2"
+        src: "domain.com.zone.j2"
         dest: "/var/named/{{ item.name }}.db"
         mode: 420
         owner: named
@@ -101,57 +81,45 @@
         group: root
       with_items: "{{ nfs }}"
 
-    - name: configure samba on smb.conf
-      community.general.ini_file:
-          path: /etc/samba/smb.conf
-          section: global
-          option: "{{ item.option }}"
-          value: "{{ item.value }}"
-      loop:
-          - option: workgroup
-            value: {{ samba_workgroup }}
-          - option: alias
-            value: {{ samba_alias }}
-          - option: security
-            value: {{ samba_security }}
-          - option: map to guest
-            value: {{ samba_map_to_guest }}
-          - option: guest account
-            value: {{ samba_guest_account }}
-      with_items: "{{ samba_config }}"
+    - name: Include Samba Server role
+      ansible.builtin.include_role:
+          name: vladgh.samba.server
 
-    - name: samba user
-      user:
-            name: "{{ item.name }}"
-            password: "{{ item.password }}"
-            state: present
-      loop: "{{ samba_users }}"
-        
-    - name: configure samba on smb.conf
-      community.general.ini_file:
-          path: /etc/samba/smb.conf
-          section: [global]
-          option: "{{ item.option }}"
-          value: "{{ item.value }}"
-          backup: yes
-      loop: "{{ samba_config }}"
+    - name: Include role
+      ansible.builtin.include_role:
+        name: vladgh.samba.server
+      vars:
+        samba_netbios_name: "{{ samba_netbios_name }}"
+        samba_server_string: "{{ samba_description }}"
+        samba_workgroup: "{{ samba_workgroup }}"
+        samba_load_homes: true
+        samba_load_printers: false
+        with_items: "{{ samba_config }}"
 
-    - name: configure samba shares
-      community.general.ini_file:
-          path: /etc/samba/smb.conf
-          section: "{{ item.section }}"
-          option: "{{ item.option }}"
-          value: "{{ item.value }}"
-      loop: "{{ samba_shares }}"
+        samba_users:
+          - name: "{{ item.name }}"
+            password: "{{ item.password }} "
+            with_items: "{{ samba_users }}"
 
-    - name: Generate create folders
-      ansible.builtin.file:
-        path: "{{ item.option }}"
-        state: directory
-        mode: 777
-        owner: root
-        group: root
-      with_items: "{{ samba_folders }}"
+        samba_shares_root: /srv/samba
+        samba_shares:
+          - name: "{{item.name}}"
+            comment: "{{item.comment}}"
+            valid_users: "{{item.valid_users}}"
+            write_list: "{{item.write_list}}" 
+            group: "{{item.group}}"
+            browseable: '{{item.browseable}}'
+            public: '{{item.public}}'
+            guest_ok: '{{item.guest_ok}}'
+            read_only: '{{item.read_only}}'
+            create_mask: '{{item.create_mask}}'
+            directory_mask: '{{item.directory_mask}}'
+            force_create_mode: '{{item.force_create_mode}}'
+            force_directory_mode: '{{item.force_directory_mode}}'
+            force_user: '{{item.force_user}}'
+            force_group: '{{item.force_group}}'
+            with_items: "{{ samba_shares }}"
+
         
     - name: create file folder an create index for domains
       ansible.builtin.file:
@@ -173,11 +141,6 @@
           group: root
       with_items: "{{ domains }}"
 
-      
-    - name: Apply SELinux policies
-      selinux:
-            policy: targeted
-            state: disabled
 
     - name: start and enable services
       service:
@@ -193,6 +156,38 @@
             - mariadb
             - php-fpm
 
-
+    - name: Open Services
+      ansible.builtin.firewalld:
+        service: "{{ item }}"
+        permanent: true
+        state: enabled
+        immediate: true
+      loop:
+        - http
+        - https
+        - nfs
+        - samba
+        - dhcp
+        - dns
+        - mysql
+        
+    - name: Firewalld Open ports
+      ansible.builtin.firewalld:
+            port: "{{ item }}"
+            permanent: true
+            state: enabled
+            immediate: true
+      loop:
+            - 137/tcp
+            - 138/tcp
+            - 139/tcp
+            - 445/tcp
+            - 67/udp
+            - 68/udp
+            - 80/tcp
+            - 443/tcp
+            - 53/tcp
+            - 53/udp
+            - 3306/tcp
 
 
