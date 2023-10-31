@@ -1,6 +1,6 @@
 # code: language=ansible
 - name: Install and configure services
-  hosts: client
+  hosts: clients
   become: yes
   become_method: sudo
   become_user: root
@@ -81,7 +81,7 @@
     - name: mount cifs resource 
       ansible.builtin.mount:
         src: "{{ item.source }}"
-        path: /root/{item.name}
+        path: /root/{{item.name}}
         fstype: cifs
         opts:  'username={{ item.user }},password={{ item.password }}'
         state: mounted
