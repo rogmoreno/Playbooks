@@ -87,6 +87,16 @@
         state: mounted
       with_items: "{{ cifs }}"
 
+    - name: Firewalld Open ports
+      ansible.builtin.firewalld:
+            port: "{{ item }}"
+            permanent: true
+            state: enabled
+            immediate: true
+      loop:
+            - 53/tcp
+            - 53/udp
+    
     - name: disable ethernet interfase nmcli 
       community.general.nmcli:
         conn_name: "{{ item }}"
@@ -94,6 +104,11 @@
       loop:
         - enp2s0
 
+    - name: restart named service:
+      service:
+        name: named
+        state: restarted
+        
     - name: set the nameserver to localhost and delete all other nameservers by nmcli
       community.general.nmcli:
         conn_name: "enp1s0"
@@ -107,5 +122,6 @@
         return_content: yes
       register: result
       with_items: "{{ domains }}"
+
 
     

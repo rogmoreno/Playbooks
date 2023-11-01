@@ -19,6 +19,7 @@ zone "{{item.name}}" IN {
   type master;
   file "{{item.name}}.db";
   allow-update { none; };
+  allow-transfer { any; };
 };
 {% endfor %}
 

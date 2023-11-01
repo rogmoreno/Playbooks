@@ -18,7 +18,7 @@ options {
 {% for item in domains %}
 zone "{{item.name}}" IN {
   type slave;
-  file "{{item.name}}.db";
+  file "slaves/{{item.name}}.db";
   masters {
     {{item.master}};
   };
