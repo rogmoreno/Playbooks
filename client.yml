@@ -104,7 +104,7 @@
       loop:
         - enp2s0
 
-    - name: restart named service:
+    - name: restart named service
       service:
         name: named
         state: restarted
