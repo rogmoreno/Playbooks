@@ -70,7 +70,7 @@
 
     - name: create cifs mount point 
       ansible.builtin.file:
-        path: /root/{item.name}
+        path: /root/{{item.name}}
         state: directory
         mode: !!str 755
         owner: root
